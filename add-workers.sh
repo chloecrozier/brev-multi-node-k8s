@@ -59,7 +59,6 @@ for WORKER_IP in "$@"; do
         sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
       sudo apt-get update -qq && sudo apt-get install -y -qq nvidia-container-toolkit
       sudo nvidia-ctk runtime configure --runtime=containerd
-      sudo systemctl restart containerd
 NVIDIA_SETUP
   fi
 
@@ -74,6 +73,33 @@ NVIDIA_SETUP
 
   ssh -o StrictHostKeyChecking=accept-new "${SSH_USER}@${WORKER_IP}" \
     "curl -sfL https://get.k3s.io | K3S_URL=${K3S_URL} K3S_TOKEN=${TOKEN} sh -s - agent ${EXT_FLAG} ${LABELS}"
+
+  # After K3s join, configure its containerd to use nvidia as default runtime
+  if [[ "$GPU" == "true" ]]; then
+    echo "    Configuring K3s containerd for NVIDIA runtime on ${WORKER_IP}..."
+    ssh -o StrictHostKeyChecking=accept-new "${SSH_USER}@${WORKER_IP}" bash -s <<'GPU_CONTAINERD'
+      set -euo pipefail
+      TMPL="/var/lib/rancher/k3s/agent/etc/containerd/config.toml.tmpl"
+      if [[ ! -f "$TMPL" ]]; then
+        sudo cp /var/lib/rancher/k3s/agent/etc/containerd/config.toml "$TMPL"
+      fi
+      if ! sudo grep -q 'default_runtime_name = "nvidia"' "$TMPL"; then
+        sudo sed -i '/\[plugins."io.containerd.cri.v1.runtime".containerd\]/a\      default_runtime_name = "nvidia"' "$TMPL"
+      fi
+      if ! sudo grep -q 'nvidia-container-runtime' "$TMPL"; then
+        sudo tee -a "$TMPL" > /dev/null <<'EOF'
+
+[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia]
+  runtime_type = "io.containerd.runc.v2"
+  [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.nvidia.options]
+    BinaryName = "/usr/bin/nvidia-container-runtime"
+    SystemdCgroup = true
+EOF
+      fi
+      sudo systemctl restart k3s-agent
+GPU_CONTAINERD
+  fi
+
   NODE_NAME=$(ssh -o StrictHostKeyChecking=accept-new "${SSH_USER}@${WORKER_IP}" "hostname")
   WORKER_NAMES+=("$NODE_NAME")
   echo "    ${WORKER_IP} (${NODE_NAME}) joined."
