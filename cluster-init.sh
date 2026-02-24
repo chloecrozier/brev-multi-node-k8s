@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "Initializing cluster..."
+~/brev-multi-node-k8s/cluster-init.sh
