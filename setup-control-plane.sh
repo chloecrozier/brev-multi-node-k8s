@@ -6,12 +6,12 @@
 set -euo pipefail
 
 echo "==> Installing K3s server (control plane)..."
-curl -sfL https://get.k3s.io | sh -
+curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" sh -
 
 echo "==> Waiting for node to be ready..."
-until sudo kubectl get nodes | grep -q " Ready"; do sleep 2; done
+until kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 2; done
 
-sudo kubectl get nodes
+kubectl get nodes
 
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
 IP=$(hostname -I | awk '{print $1}')
