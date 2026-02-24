@@ -44,11 +44,21 @@ fi
 
 K3S_URL="https://${CP_IP}:6443"
 
+WORKER_NAMES=()
 for WORKER_IP in "$@"; do
   echo "==> Joining ${WORKER_IP} to cluster at ${CP_IP}..."
   ssh -o StrictHostKeyChecking=accept-new "${SSH_USER}@${WORKER_IP}" \
     "curl -sfL https://get.k3s.io | K3S_URL=${K3S_URL} K3S_TOKEN=${TOKEN} sh -s - agent ${LABELS}"
-  echo "    ${WORKER_IP} joined."
+  NODE_NAME=$(ssh -o StrictHostKeyChecking=accept-new "${SSH_USER}@${WORKER_IP}" "hostname")
+  WORKER_NAMES+=("$NODE_NAME")
+  echo "    ${WORKER_IP} (${NODE_NAME}) joined."
+done
+
+echo ""
+echo "==> Labeling workers with role=worker..."
+for NAME in "${WORKER_NAMES[@]}"; do
+  ssh -o StrictHostKeyChecking=accept-new "${SSH_USER}@${CP_IP}" \
+    "sudo kubectl label node ${NAME} node-role.kubernetes.io/worker=true --overwrite"
 done
 
 echo ""

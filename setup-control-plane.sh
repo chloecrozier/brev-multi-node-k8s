@@ -16,6 +16,14 @@ kubectl get nodes
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
 IP=$(hostname -I | awk '{print $1}')
 
+# Save token and IP as env vars so they can be referenced later
+grep -q 'K3S_TOKEN=' /etc/environment 2>/dev/null && sudo sed -i "/K3S_TOKEN=/d" /etc/environment
+grep -q 'K3S_CP_IP=' /etc/environment 2>/dev/null && sudo sed -i "/K3S_CP_IP=/d" /etc/environment
+echo "K3S_TOKEN=${TOKEN}" | sudo tee -a /etc/environment > /dev/null
+echo "K3S_CP_IP=${IP}" | sudo tee -a /etc/environment > /dev/null
+export K3S_TOKEN="$TOKEN"
+export K3S_CP_IP="$IP"
+
 echo ""
 echo "============================================"
 echo "  Control plane is ready!"

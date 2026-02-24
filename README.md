@@ -12,7 +12,16 @@ SSH into a Brev CPU instance and run:
 ./setup-control-plane.sh
 ```
 
-Prints the IP, token, and next steps.
+Prints the IP, token, and next steps. The token and IP are also saved as `K3S_TOKEN` and `K3S_CP_IP` env vars on the control plane.
+
+To retrieve the token later:
+
+```bash
+# From the control plane
+echo $K3S_TOKEN
+# Or directly
+sudo cat /var/lib/rancher/k3s/server/node-token
+```
 
 ## 2. Add workers
 
