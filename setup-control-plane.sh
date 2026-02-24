@@ -5,8 +5,18 @@
 #
 set -euo pipefail
 
+EXTERNAL_IP=$(curl -s ifconfig.me || curl -s icanhazip.com || echo "")
+INTERNAL_IP=$(hostname -I | awk '{print $1}')
+
+EXTRA_FLAGS=""
+if [[ -n "$EXTERNAL_IP" ]]; then
+  EXTRA_FLAGS="--node-external-ip ${EXTERNAL_IP}"
+fi
+
 echo "==> Installing K3s server (control plane)..."
-curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" sh -
+echo "    Internal IP: ${INTERNAL_IP}"
+echo "    External IP: ${EXTERNAL_IP:-none detected}"
+curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" sh -s - server ${EXTRA_FLAGS}
 
 echo "==> Waiting for node to be ready..."
 until kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 2; done
@@ -14,15 +24,22 @@ until kubectl get nodes 2>/dev/null | grep -q " Ready"; do sleep 2; done
 kubectl get nodes
 
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
-IP=$(hostname -I | awk '{print $1}')
 
-# Save token and IP as env vars so they can be referenced later
+# Save token and IPs as env vars so they can be referenced later
 grep -q 'K3S_TOKEN=' /etc/environment 2>/dev/null && sudo sed -i "/K3S_TOKEN=/d" /etc/environment
 grep -q 'K3S_CP_IP=' /etc/environment 2>/dev/null && sudo sed -i "/K3S_CP_IP=/d" /etc/environment
+grep -q 'K3S_CP_EXTERNAL_IP=' /etc/environment 2>/dev/null && sudo sed -i "/K3S_CP_EXTERNAL_IP=/d" /etc/environment
 echo "K3S_TOKEN=${TOKEN}" | sudo tee -a /etc/environment > /dev/null
-echo "K3S_CP_IP=${IP}" | sudo tee -a /etc/environment > /dev/null
+echo "K3S_CP_IP=${INTERNAL_IP}" | sudo tee -a /etc/environment > /dev/null
+echo "K3S_CP_EXTERNAL_IP=${EXTERNAL_IP}" | sudo tee -a /etc/environment > /dev/null
 export K3S_TOKEN="$TOKEN"
-export K3S_CP_IP="$IP"
+export K3S_CP_IP="$INTERNAL_IP"
+export K3S_CP_EXTERNAL_IP="$EXTERNAL_IP"
+
+# Copy token to user-readable location so `brev copy` can grab it
+cp /var/lib/rancher/k3s/server/node-token "$HOME/.k3s-token" 2>/dev/null || \
+  sudo cp /var/lib/rancher/k3s/server/node-token "$HOME/.k3s-token"
+chmod 644 "$HOME/.k3s-token"
 
 echo ""
 echo "============================================"
