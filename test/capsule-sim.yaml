@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: capsule-1
+  labels:
+    role: sandbox
+    status: running
+spec:
+  containers:
+    - name: capsule
+      image: python:3.11-slim
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          python3 -c "
+          import time, json
+          capsule = {'hypothesis': 'Gene X expression correlates with treatment response', 'dataset': 'patient_rnaseq_batch_42', 'objective': 'Validate correlation via DE analysis', 'kernel': 'python3'}
+          print(json.dumps({'event': 'capsule_start', **capsule}), flush=True)
+          for step in ['loading_dataset', 'running_kernel', 'evaluating_objective']:
+              print(json.dumps({'event': step, 'status': 'in_progress'}), flush=True)
+              time.sleep(3)
+              print(json.dumps({'event': step, 'status': 'complete'}), flush=True)
+          print(json.dumps({'event': 'capsule_done', 'result': 'hypothesis_supported', 'p_value': 0.003}), flush=True)
+          time.sleep(3600)
+          "
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: capsule-2
+  labels:
+    role: sandbox
+    status: running
+spec:
+  containers:
+    - name: capsule
+      image: python:3.11-slim
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          python3 -c "
+          import time, json
+          capsule = {'hypothesis': 'Protein Y is upregulated in condition Z', 'dataset': 'proteomics_cohort_7', 'objective': 'Measure fold change across conditions', 'kernel': 'python3'}
+          print(json.dumps({'event': 'capsule_start', **capsule}), flush=True)
+          for step in ['loading_dataset', 'running_kernel', 'evaluating_objective']:
+              print(json.dumps({'event': step, 'status': 'in_progress'}), flush=True)
+              time.sleep(3)
+              print(json.dumps({'event': step, 'status': 'complete'}), flush=True)
+          print(json.dumps({'event': 'capsule_done', 'result': 'hypothesis_rejected', 'p_value': 0.42}), flush=True)
+          time.sleep(3600)
+          "
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
