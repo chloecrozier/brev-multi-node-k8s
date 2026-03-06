@@ -9,44 +9,37 @@ Uses **K3s** (lightweight Kubernetes). It's a single binary that installs in sec
 SSH into a Brev CPU instance and run:
 
 ```bash
-./setup-control-plane.sh
+source ./setup-control-plane.sh
 ```
 
-Prints the IP, token, and next steps. The token and IP are also saved as `K3S_TOKEN` and `K3S_CP_IP` env vars on the control plane.
-
-To retrieve the token later:
-
-```bash
-# From the control plane
-echo $K3S_TOKEN
-# Or directly
-sudo cat /var/lib/rancher/k3s/server/node-token
-```
+Prints the IP, token, and next steps. The token and IP are saved as `$K3S_TOKEN` and `$K3S_CP_IP` env vars (persisted in `/etc/environment`).
 
 ## 2. Add workers
 
-Pass the IP and token from step 1, then as many worker IPs as you want. Run it once for CPU, once for GPU (or both, or just one).
+Run from the control plane. The IP and token are picked up automatically from step 1.
 
 ```bash
 # CPU workers
-./add-workers.sh <cp-ip> <token> <ip> <ip> <ip>
+./add-workers.sh <worker-ip> [worker-ip] ...
 
-# GPU workers (labels them so you can schedule GPU jobs to these nodes)
-GPU=true ./add-workers.sh <cp-ip> <token> <ip> <ip>
+# GPU workers
+GPU=true ./add-workers.sh <worker-ip> [worker-ip] ...
 ```
 
-## 3. Connect externally
+## 3. Schedule from your laptop
 
-Your cluster is on a private network. These two commands let you reach it from your laptop — first downloads the credentials, then opens a tunnel.
+Your cluster is on a private network. These commands let you reach it from your laptop — download the credentials, then open a tunnel.
 
 ```bash
 # Download cluster credentials (one time)
-brev copy <cp-instance-name>:/etc/rancher/k3s/k3s.yaml ~/.kube/config
-# Open tunnel to the API server (keep this running)
-brev port-forward <cp-instance-name> --port 6443:6443
-# Test
+brev copy <brev-instance-name>:/etc/rancher/k3s/k3s.yaml ~/.kube/config
+# Open tunnel to the API server (keep this running in a terminal)
+brev port-forward <brev-instance-name> --port 6443:6443
+# In another terminal
 kubectl get nodes
 ```
+
+Use `brev list` to find your instance name.
 
 ## Common commands
 

@@ -1,2 +1,2 @@
 #!/bin/bash
-~/brev-multi-node-k8s/cluster-init.sh
+echo "Hi from a worker nodespun up from the Brev k8s-worker-node launchable!

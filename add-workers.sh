@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 #
 # Add worker nodes to your K3s cluster.
+# Run this from the control plane after setup-control-plane.sh.
 #
 # Usage:
-#   ./add-workers.sh <control-plane-ip> <token> <worker-ip-1> [worker-ip-2] ...
+#   ./add-workers.sh <worker-ip-1> [worker-ip-2] ...
+#   GPU=true ./add-workers.sh <worker-ip-1> [worker-ip-2] ...
+#
+# The control-plane IP and token are read from $K3S_CP_IP and $K3S_TOKEN
+# (set automatically by setup-control-plane.sh via /etc/environment).
+# Override with env vars if needed:
+#   CP_IP=10.0.0.1 TOKEN=abc ./add-workers.sh <worker-ip> ...
 #
 # Options (via env vars):
 #   SSH_USER     - SSH user for worker nodes (default: ubuntu)
@@ -12,22 +19,34 @@
 #
 set -euo pipefail
 
-if [[ $# -lt 3 ]]; then
-  echo "Usage: ./add-workers.sh <control-plane-ip> <token> <worker-ip> [worker-ip] ..."
+if [[ $# -lt 1 ]]; then
+  echo "Usage: ./add-workers.sh <worker-ip> [worker-ip] ..."
+  echo "       GPU=true ./add-workers.sh <worker-ip> [worker-ip] ..."
   echo ""
-  echo "  control-plane-ip : IP of the control plane node"
-  echo "  token            : K3s node token (printed by setup-control-plane.sh)"
-  echo "  worker-ip        : one or more worker IPs to join"
+  echo "  Run from the control plane. IP and token are read automatically"
+  echo "  from \$K3S_CP_IP and \$K3S_TOKEN (set by setup-control-plane.sh)."
   echo ""
   echo "Env vars:"
   echo "  SSH_USER=ubuntu    SSH user for workers"
   echo "  GPU=true           Label workers with node-role=gpu"
   echo "  NODE_LABELS=k=v    Extra K3s node labels"
+  echo "  CP_IP=<ip>         Override control plane IP"
+  echo "  TOKEN=<token>      Override join token"
   exit 1
 fi
 
-CP_IP="$1"; shift
-TOKEN="$1"; shift
+CP_IP="${CP_IP:-${K3S_CP_IP:-}}"
+TOKEN="${TOKEN:-${K3S_TOKEN:-}}"
+
+if [[ -z "$CP_IP" || -z "$TOKEN" ]]; then
+  echo "Error: Could not find control plane IP or token."
+  echo "  Run 'source /etc/environment' or set CP_IP and TOKEN env vars."
+  exit 1
+fi
+
+echo "  Control plane : ${CP_IP}"
+echo "  Token         : ${TOKEN:0:20}..."
+echo ""
 
 SSH_USER="${SSH_USER:-ubuntu}"
 GPU="${GPU:-false}"
