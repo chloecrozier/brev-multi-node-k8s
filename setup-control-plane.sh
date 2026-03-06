@@ -63,7 +63,7 @@ cat <<EOF
   Internal IP : ${INTERNAL_IP}
   External IP : ${EXTERNAL_IP:-none}
   Hostname    : ${HOSTNAME}
-  Token       : ${SHORT_TOKEN}
+  Token       : ${TOKEN}
   Full token  : echo \$K3S_TOKEN  or  cat ~/.k3s-token
 
 --------------------------------------------
