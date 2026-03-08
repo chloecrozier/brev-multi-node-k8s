@@ -12,7 +12,7 @@ cd brev-multi-node-k8s
 source ./setup-control-plane.sh
 ```
 
-**Workers** — create worker instances and open port **10250** on each one. Then from the control plane:
+**Workers** — create worker instances and open port **10250** on each one. Use the [worker launchable](https://brev.nvidia.com/launchable/deploy?launchableID=env-3Afe7hUucFw6vFquppH1xuSjAAx) to spin up multiple workers in bulk. Then from the control plane:
 
 ```bash
 ./add-workers.sh <worker-ip> [worker-ip] ...
