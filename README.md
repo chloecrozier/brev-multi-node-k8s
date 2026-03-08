@@ -14,12 +14,23 @@ source ./setup-control-plane.sh
 
 **Workers** — create worker instances and open port **10250** on each one. Use the [worker launchable](https://brev.nvidia.com/launchable/deploy?launchableID=env-3Afe7hUucFw6vFquppH1xuSjAAx) to spin up multiple workers in bulk. Then from the control plane:
 
+Get worker IPs from your laptop with `brev list`:
+
+```bash
+# List all worker IPs
+brev list | grep k8s-worker-node | awk '{print $1}' | while read name; do
+  brev ssh $name -- hostname -I | awk '{print $1}'
+done
+```
+
+Then from the control plane:
+
 ```bash
 ./add-workers.sh <worker-ip> [worker-ip] ...
 GPU=true ./add-workers.sh <gpu-worker-ip> [gpu-worker-ip] ...
 ```
 
-**Schedule from your personal laptop:**
+**Schedule from your laptop:**
 Use `brev list` to find your instance name.
 
 ```bash
