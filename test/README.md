@@ -1,65 +1,53 @@
-# Submitting workloads from an external device
+# GPU Workloads
 
-All commands run from your laptop. Make sure you've connected first (main README step 3).
+All manifests use NVIDIA containers from [NGC](https://catalog.ngc.nvidia.com) and run on GPU worker nodes.
 
-## 1. Quick test — schedule a single pod
-
-```bash
-kubectl apply -f test/test-pod.yaml
-kubectl get pod sandbox-test -o wide       # check it landed on a worker
-kubectl delete pod sandbox-test
-```
-
-## 2. Capsule simulation — submit, monitor, read results, clean up
-
-Submits two capsule pods. Each runs a hypothesis evaluation (load dataset, run kernel, evaluate objective) and logs structured JSON.
-
-**Submit:**
+## Smoke test — `nvidia-smi`
 
 ```bash
-kubectl apply -f test/capsule-sim.yaml
+kubectl apply -f test/gpu-smoke-test.yaml
+kubectl logs gpu-smoke-test
 ```
 
-**Monitor the pool:**
+## CUDA nbody simulation
+
+NVIDIA's n-body gravitational sim benchmark (512k bodies).
 
 ```bash
-kubectl get pods -l role=sandbox -o wide
+kubectl apply -f test/cuda-nbody.yaml
+kubectl logs -f cuda-nbody
 ```
 
-**Read results (from your laptop):**
+## PyTorch matmul benchmark
+
+Matrix multiply at increasing sizes, reports TFLOPS. Uses NVIDIA NGC PyTorch.
 
 ```bash
-kubectl logs capsule-1
-kubectl logs capsule-2
+kubectl apply -f test/pytorch-bench.yaml
+kubectl logs -f pytorch-bench
 ```
 
-Example output:
+## Multi-GPU test (2 GPUs)
 
-```json
-{"event": "capsule_start", "hypothesis": "Gene X expression correlates with treatment response", "dataset": "patient_rnaseq_batch_42", "objective": "Validate correlation via DE analysis", "kernel": "python3"}
-{"event": "loading_dataset", "status": "complete"}
-{"event": "running_kernel", "status": "complete"}
-{"event": "evaluating_objective", "status": "complete"}
-{"event": "capsule_done", "result": "hypothesis_supported", "p_value": 0.003}
-```
-
-**Deallocate:**
+Enumerates GPUs and tests device-to-device transfer.
 
 ```bash
-kubectl delete pod capsule-1 capsule-2
+kubectl apply -f test/multi-gpu.yaml
+kubectl logs multi-gpu
 ```
 
-## 3. Get status programmatically
+## LLM inference — Ollama
 
-For scripts or a dataset server that needs machine-readable output:
+Run any LLM on a GPU.
 
 ```bash
-# JSON status of all sandbox pods
-kubectl get pods -l role=sandbox -o json
+kubectl apply -f test/llm-ollama.yaml
+kubectl exec ollama -- ollama pull llama3.2:1b
+kubectl exec ollama -- ollama run llama3.2:1b "What is Kubernetes?"
+```
 
-# Just names and phases
-kubectl get pods -l role=sandbox -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.phase}{"\n"}{end}'
+## Cleanup
 
-# Stream logs in real time
-kubectl logs -f <pod-name>
+```bash
+kubectl delete pod gpu-smoke-test cuda-nbody pytorch-bench multi-gpu ollama
 ```

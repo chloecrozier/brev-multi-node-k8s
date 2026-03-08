@@ -28,6 +28,12 @@ brev port-forward <instance-name> --port 6443:6443
 kubectl get nodes    # in another terminal
 ```
 
-## Testing
+## GPU Workloads
 
-See `test/README.md` for steps on how to schedule various example pods.
+See `test/README.md`. Example manifests using NVIDIA NGC containers:
+
+- **gpu-smoke-test.yaml** — `nvidia-smi`
+- **cuda-nbody.yaml** — CUDA n-body simulation benchmark
+- **pytorch-bench.yaml** — matmul TFLOPS benchmark (NGC PyTorch)
+- **multi-gpu.yaml** — 2-GPU enumeration and device transfer
+- **llm-ollama.yaml** — run any LLM locally on a GPU
